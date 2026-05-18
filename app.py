@@ -1,5 +1,6 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 import secrets
+import os
 from crypto import process_caesar, process_vigenere, process_affine, process_hill, process_playfair
 
 app = Flask(__name__)
@@ -131,5 +132,5 @@ def playfair():
             
     return render_template('cipher.html', title='Playfair Cipher', algo='playfair')
 
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+app = Flask(__name__)
+app.secret_key = os.environ.get("SECRET_KEY", "cryptosim-secret-key")
