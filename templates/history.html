@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}History - Crypto Sim{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">Encryption History</h2>
+        {% if history %}
+            <a href="{{ url_for('clear_history') }}" onclick="return confirm('Are you sure you want to clear the history?')" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md shadow-sm transition-colors text-sm font-medium">Clear History</a>
+        {% endif %}
+    </div>
+
+    {% if history %}
+        <div class="bg-white dark:bg-gray-800 shadow overflow-hidden sm:rounded-lg border border-gray-200 dark:border-gray-700">
+            <ul class="divide-y divide-gray-200 dark:divide-gray-700">
+                {% for item in history %}
+                    <li class="p-6 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 mb-2">
+                                    {{ item.algo }} ({{ item.mode }})
+                                </span>
+                                <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                    <p><span class="font-bold">Input:</span> {{ item.input }}</p>
+                                    <p><span class="font-bold">Key:</span> {{ item.key }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <p class="text-sm font-bold text-gray-900 dark:text-white mb-1">Result:</p>
+                            <div class="p-3 bg-gray-100 dark:bg-gray-900 rounded border border-gray-200 dark:border-gray-700 font-mono text-sm break-all text-gray-800 dark:text-gray-200">
+                                {{ item.result }}
+                            </div>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% else %}
+        <div class="text-center py-16 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">No history</h3>
+            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">Your recent encryptions and decryptions will appear here.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

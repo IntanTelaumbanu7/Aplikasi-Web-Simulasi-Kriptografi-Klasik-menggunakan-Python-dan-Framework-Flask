@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <div class="mb-6 flex items-center justify-between">
+        <h2 class="text-3xl font-bold text-gray-900 dark:text-white">{{ title }}</h2>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <!-- Input Form -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700">
+            <form method="POST" action="">
+                <!-- Mode Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Mode</label>
+                    <div class="flex items-center space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="mode" value="encrypt" class="form-radio text-primary" {% if mode != 'decrypt' %}checked{% endif %}>
+                            <span class="ml-2 dark:text-gray-300">Encrypt</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="mode" value="decrypt" class="form-radio text-primary" {% if mode == 'decrypt' %}checked{% endif %}>
+                            <span class="ml-2 dark:text-gray-300">Decrypt</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Text Input -->
+                <div class="mb-4">
+                    <label for="text" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Input Text</label>
+                    <textarea id="text" name="text" rows="4" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2" placeholder="Enter your text here...">{{ text|default('') }}</textarea>
+                </div>
+
+                <!-- Algorithm Specific Key Inputs -->
+                {% if algo == 'caesar' %}
+                <div class="mb-6">
+                    <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift / Key (1-25)</label>
+                    <input type="number" id="key" name="key" min="1" max="25" value="{{ key|default(3) }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2">
+                </div>
+
+                {% elif algo == 'vigenere' or algo == 'playfair' %}
+                <div class="mb-6">
+                    <label for="key" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Keyword</label>
+                    <input type="text" id="key" name="key" value="{{ key|default('') }}" required pattern="[A-Za-z]+" title="Only alphabetic characters are allowed" class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2">
+                </div>
+
+                {% elif algo == 'affine' %}
+                <div class="mb-6 grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="key_a" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Multiplier (a)</label>
+                        <select id="key_a" name="key_a" class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2">
+                            {% for a_val in [1, 3, 5, 7, 9, 11, 15, 17, 19, 21, 23, 25] %}
+                                <option value="{{ a_val }}" {% if key_a|default(5) == a_val %}selected{% endif %}>{{ a_val }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label for="key_b" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Shift (b)</label>
+                        <input type="number" id="key_b" name="key_b" min="0" max="25" value="{{ key_b|default(8) }}" required class="w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2">
+                    </div>
+                </div>
+
+                {% elif algo == 'hill' %}
+                <div class="mb-4">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Matrix Size</label>
+                    <div class="flex space-x-4">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="matrix_size" value="2" class="form-radio" onchange="updateMatrixGrid(2)" {% if matrix_size|default(2) == 2 %}checked{% endif %}>
+                            <span class="ml-2 dark:text-gray-300">2x2</span>
+                        </label>
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="matrix_size" value="3" class="form-radio" onchange="updateMatrixGrid(3)" {% if matrix_size == 3 %}checked{% endif %}>
+                            <span class="ml-2 dark:text-gray-300">3x3</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Key Matrix</label>
+                    <div id="matrix-grid" class="grid gap-2 inline-grid">
+                        <!-- Filled by JS -->
+                    </div>
+                </div>
+                {% endif %}
+
+                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors">
+                    Execute
+                </button>
+            </form>
+        </div>
+
+        <!-- Result & Steps Display -->
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-6 border border-gray-200 dark:border-gray-700 overflow-x-auto min-h-[400px]">
+            <h3 class="text-xl font-bold text-gray-900 dark:text-white mb-4 border-b pb-2 dark:border-gray-700">Process & Result</h3>
+            
+            {% if result %}
+                <div class="space-y-4 text-gray-700 dark:text-gray-300" id="calculation-steps">
+                    {% for step in result.steps %}
+                        <div class="step-item p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                            {{ step|safe }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="flex items-center justify-center h-64 text-gray-400 dark:text-gray-500 italic text-center">
+                    Enter text and click Execute to see the calculation steps here.
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if algo == 'hill' %}
+<script>
+    function updateMatrixGrid(size) {
+        const grid = document.getElementById('matrix-grid');
+        grid.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
+        grid.innerHTML = '';
+        
+        // Try to get previous values if they exist in a JS object
+        let existingMatrix = [];
+        try {
+            const matrixData = '{{ matrix|default([])|tojson|safe }}';
+            existingMatrix = JSON.parse(matrixData);
+        } catch(e) {}
+
+        for (let i = 0; i < size; i++) {
+            for (let j = 0; j < size; j++) {
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.name = `m_${i}_${j}`;
+                
+                let val = 0;
+                if (existingMatrix.length > i && existingMatrix[i].length > j) {
+                    val = existingMatrix[i][j];
+                } else if (size === 2) {
+                    // Default invertible 2x2: [3 3; 2 5]
+                    const defaults = [[3, 3], [2, 5]];
+                    val = defaults[i][j];
+                } else if (size === 3) {
+                    // Default invertible 3x3: [6 24 1; 13 16 10; 20 17 15]
+                    const defaults = [[6, 24, 1], [13, 16, 10], [20, 17, 15]];
+                    val = defaults[i][j];
+                }
+
+                input.value = val;
+                input.required = true;
+                input.className = 'w-16 h-12 text-center rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-2';
+                grid.appendChild(input);
+            }
+        }
+    }
+    
+    // Initialize
+    updateMatrixGrid({{ matrix_size|default(2) }});
+</script>
+{% endif %}
+
+{% endblock %}
